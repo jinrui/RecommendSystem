@@ -64,25 +64,26 @@ class DeepFmModel():
 			
 		with tf.variable_scope('loss'):
 			self.loss = tf.reduce_mean(-tf.reduce_sum(self.y*tf.log(deepfm),reduction_indices=[1]))
-			self.train_op=tf.train.AdamOptimizer(learning_rate=0.01, beta1=0.9, beta2=0.999,epsilon=1e-8).minimize(self.loss)
+			self.train_op = tf.no_op
+			if is_training:
+				self.train_op=tf.train.AdamOptimizer(learning_rate=0.001, beta1=0.9, beta2=0.999,epsilon=1e-8).minimize(self.loss)
 			correct_prediction = tf.equal(tf.argmax(deepfm,1), tf.argmax(self.y,1)) # 计算准确度
 			self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 			self.auc=tf.contrib.metrics.streaming_auc(deepfm,self.y)
 
 #调用deepfm模型
 
-fd = open('diss_data.txt')
+fd = open('diss_features2.txt')
 data = fd.readlines()
 dataset = np.array([line.strip().split(',') for line in data])
 
 print(dataset[:, :])
-Y = np.array(dataset[:, 0], dtype=float)
-yout=[]
-for i in Y:
-	if i ==0:
-		yout.append([0,1])
-	else:
-		yout.append([1,0])
+Y = np.array(dataset[:, 0], dtype=float) //100
+print(Y)
+yout=np.zeros((Y.shape[0],200))
+for i in range(len(Y)):
+	#print(Y[i])
+	yout[i][int(Y[i])]=1
 Y = np.array(yout)
 X = np.array(dataset[:, 1:], dtype=float)
 scaler = MinMaxScaler()
@@ -110,11 +111,11 @@ def runEpoch(session,model,xdata,ydata,epoch_size):
 		feed_dict[model.x]=x
 		print('xy.shape',x.shape,y.shape)
 		feed_dict[model.y]=y
-		loss,acc,auc,_=session.run([model.loss,model.accuracy,model.auc,model.train_op],feed_dict=feed_dict)
+		loss,acc,_=session.run([model.loss,model.accuracy,model.train_op],feed_dict=feed_dict)
 		totalloss += loss
 		totalacc += acc
 		print('step=%d,loss=%f,acc=%f'%(step,loss,acc))
-		print('auc=',auc)
+		#print('auc=',auc)
 	avgloss=totalloss/epoch_size
 	avgacc = totalacc/epoch_size
 	print('run finish,avgloss=%f,avgacc=%f'%(avgloss,avgacc))
@@ -124,10 +125,10 @@ def runEpoch(session,model,xdata,ydata,epoch_size):
 	
 
 with tf.variable_scope('trainfm'):
-	trainmodel = DeepFmModel(True,batch_size,feature_size,2)
+	trainmodel = DeepFmModel(True,batch_size,feature_size,200)
 	
 with tf.variable_scope('testfm'):
-	testmodel = DeepFmModel(False,batch_size,feature_size,2)
+	testmodel = DeepFmModel(False,batch_size,feature_size,200)
 
 config = tf.ConfigProto()	
 config.gpu_options.allow_growth = True
