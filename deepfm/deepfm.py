@@ -99,7 +99,7 @@ class DeepFmModel():
                                                           self.deep_layers[i], activation_fn=
                                                           tf.nn.relu, scope='fc%d' % i)  # batch_size,64
                 # drop out
-                ydeep = tf.contrib.layers.dropout(ydeep, keep_prob=1.0, is_training=self.is_training, scope='dropout%d' % i)
+                ydeep = tf.contrib.layers.dropout(ydeep, keep_prob=0.5, is_training=self.is_training, scope='dropout%d' % i)
 
         with tf.variable_scope('deepfm_sigmoid'):
             print(left.get_shape(), right.get_shape(), ydeep.get_shape())
