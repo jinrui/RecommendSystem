@@ -13,6 +13,8 @@
 
 ## context-rnn
 
+## listwise
+
 ## Bayesian Personalized Ranking
 
 
@@ -21,3 +23,5 @@
 
 ## 一些用户向量和item向量的生成方法
 eg 矩阵分解，word2vec，lstm(用来拟合用户向量)，双塔dnn(同时计算两个向量，这个比较经典)。
+
+
