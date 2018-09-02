@@ -1,0 +1,52 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jul 17 23:47:40 2018
+
+@author: jinrui06
+"""
+
+import sklearn
+import numpy as np
+import pandas as pd
+from sklearn import cross_validation as cv
+from sklearn.metrics.pairwise import pairwise_distances
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+
+#读取数据到pd
+user_item_pd = pd.read_csv('../data/ml-100k/u.data',sep='\t',names=['user_id', 'item_id', 'rating', 'timestamp'])
+#print(user_item_pd.head(10))
+maxuserid = user_item_pd['user_id'].max()
+maxitemid = user_item_pd['item_id'].max()
+#划分成train_test来评估rmse
+train_data, test_data = cv.train_test_split(user_item_pd, test_size=0.2)
+
+train_ma = np.zeros([maxuserid,maxitemid])
+test_ma = np.zeros([maxuserid,maxitemid])
+
+for line in train_data.itertuples():
+    #print(line[0],line[1],line[2],line[3])
+    train_ma[int(line[1])-1,int(line[2])-1] = int(line[3])
+    
+for line in test_data.itertuples():
+    test_ma[int(line[1])-1,int(line[2])-1] = int(line[3])
+    
+#print(test_ma)
+# 计算用户相似度
+user_similarity = pairwise_distances(train_ma, metric='cosine')
+# 计算物品相似度
+item_similarity = pairwise_distances(train_ma.T, metric='cosine')
+print(item_similarity)
+
+#计算出用户对物品的得分,归一化是因为每个用户打分标准不一样，必须对用户的打分归一化。
+def predict(ma,simlar,tpe):
+    if tpe == 'user':
+        return simlar.dot(ma)/np.sum(np.abs(ma),1)
+    if tpe == 'item':
+        return ma.dot(simlar)/np.sum(np.abs(simlar),1)
+
+def rmse(pred,test_data):
+    pred = pred[test_data.nonzero()].flatten()
+    test_data = test_data[test_data.nonzero()].flatten()
+    return sqrt(mean_squared_error(pred,test_data))
