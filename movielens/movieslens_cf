@@ -17,6 +17,7 @@ from math import sqrt
 #读取数据到pd
 user_item_pd = pd.read_csv('../data/ml-100k/u.data',sep='\t',names=['user_id', 'item_id', 'rating', 'timestamp'])
 #print(user_item_pd.head(10))
+#print(len(user_item_pd['user_id'].unique()))
 maxuserid = user_item_pd['user_id'].max()
 maxitemid = user_item_pd['item_id'].max()
 #划分成train_test来评估rmse
@@ -37,16 +38,21 @@ for line in test_data.itertuples():
 user_similarity = pairwise_distances(train_ma, metric='cosine')
 # 计算物品相似度
 item_similarity = pairwise_distances(train_ma.T, metric='cosine')
-print(item_similarity)
+#print(item_similarity)
 
 #计算出用户对物品的得分,归一化是因为每个用户打分标准不一样，必须对用户的打分归一化。
 def predict(ma,simlar,tpe):
     if tpe == 'user':
-        return simlar.dot(ma)/np.sum(np.abs(ma),1)
+        return simlar.dot(ma)/(ma != 0).sum(0)
     if tpe == 'item':
-        return ma.dot(simlar)/np.sum(np.abs(simlar),1)
+        return (ma.dot(simlar).T/ (ma != 0).sum(1)).T
 
 def rmse(pred,test_data):
     pred = pred[test_data.nonzero()].flatten()
     test_data = test_data[test_data.nonzero()].flatten()
     return sqrt(mean_squared_error(pred,test_data))
+
+print((test_ma != 0).sum(1).shape)
+test_predict = predict(test_ma, item_similarity,'item')
+print(test_predict.shape,test_ma.shape)
+print(rmse(test_predict,test_ma ))
